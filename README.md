@@ -32,6 +32,12 @@ go install github.com/dawidl022/gitlab-contribution-sync@latest
 gitlab-contribution-sync <gitlab-username> <local-target-directory> <remote-github-repo>
 ```
 
+For a self-hosted GitLab, set `GITLAB_HOST` (default `gitlab.com`):
+
+```bash
+GITLAB_HOST=git.example.com gitlab-contribution-sync <gitlab-username> <local-target-directory> <remote-github-repo>
+```
+
 where:
 
 - `<gitlab-username>` is a placeholder for your GitLab username.

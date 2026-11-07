@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"os"
 
 	"github.com/dawidl022/gitlab-contribution-sync/contributions"
 )
@@ -12,7 +13,12 @@ import (
 func fetchGitlabContributions(username string) (map[contributions.Date]int, error) {
 	var contribs map[contributions.Date]int
 
-	resp, err := http.Get(fmt.Sprintf("https://gitlab.com/users/%s/calendar.json", username))
+	host := os.Getenv("GITLAB_HOST") // self-hosted GitLab, e.g. git.example.com
+	if host == "" {
+		host = "gitlab.com"
+	}
+
+	resp, err := http.Get(fmt.Sprintf("https://%s/users/%s/calendar.json", host, username))
 	if err != nil {
 		return nil, err
 	}
