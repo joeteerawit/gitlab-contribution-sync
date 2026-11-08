@@ -76,43 +76,25 @@ existing `origin` remote (ignoring `<remote-github-repo>`), and pushes to branch
   `https://<host>/users/<username>/calendar.json` in a private window. If it
   returns `{}`, enable "Include private contributions on your profile" (User
   Settings → Profile) and make sure the profile is not private.
-- **The run stops with `exit status 128` partway through:** progress is saved in
-  `contributions.json` after every commit, so re-running the same command
-  resumes. Git errors are not printed. Run `git push -u origin main` in the
-  target directory to see push errors.
+- **The run stops partway through:** progress is saved in `contributions.json`
+  after every commit, so re-running the same command resumes. Git errors from
+  commit and push are printed.
 - **Commits don't show on the GitHub graph:** the commit author email
   (`git config user.email` in the target directory) must be verified on your
   GitHub account. For a private target repo, enable "Include private
   contributions on my profile" on GitHub.
-- **Push fails with `remote unpack failed` / `missing blob`:** git's automatic
-  maintenance repacks after every commit and can race with the next commit,
-  corrupting the local repo. Run the first (large) sync with auto-maintenance
-  off for that run only:
-
-  ```bash
-  GIT_CONFIG_COUNT=2 GIT_CONFIG_KEY_0=maintenance.auto GIT_CONFIG_VALUE_0=false \
-    GIT_CONFIG_KEY_1=gc.auto GIT_CONFIG_VALUE_1=0 \
-    gitlab-contribution-sync <gitlab-username> <local-target-directory> <remote-github-repo>
-  ```
-
-  If the repo is already corrupt (`git fsck` reports missing objects) and
-  nothing was pushed, reset to the last pushed commit, delete
-  `contributions.json` and re-run.
-- A first sync can create thousands of commits and take several minutes.
-- **Only the latest ~1,000 commits show on the GitHub graph:** GitHub appears to
-  count at most ~1,000 commits per push (observed, not documented). For a large
-  first sync, point `<remote-github-repo>` at a local bare repo so the tool's
-  single push stays local, then push to GitHub oldest-first in batches of 900:
-
-  ```bash
-  for n in $(seq 900 900 $(git rev-list --count HEAD)) $(git rev-list --count HEAD); do
-    git push origin "$(git rev-list --reverse HEAD | sed -n "${n}p"):refs/heads/main"
-  done
-  ```
-
-  Commits GitHub already received are not recounted, so if a big push was
-  already made, rebuild the history in a fresh directory (new commit IDs) and
-  force-push the first batch.
+- **Large first syncs:** the tool handles these itself. Git's auto maintenance
+  is turned off while committing (it repacks after every commit and races the
+  next one, corrupting the repo), and unpushed commits are pushed oldest-first
+  in batches of 900, because GitHub appears to count only ~1,000 commits per
+  push on the contribution graph (observed, not documented). A first sync can
+  still create thousands of commits and take several minutes.
+- **Only the latest ~1,000 commits show, from a sync made with an older
+  version:** GitHub does not recount commits it already received. Re-run the
+  sync into a fresh, empty directory (new commit IDs) whose remote is a local
+  bare repo, then point its `origin` at GitHub and force-push the first 900
+  commits (`git push --force origin "$(git rev-list --reverse HEAD | sed -n 900p):refs/heads/main"`).
+  The next normal run pushes the rest in batches.
 
 ## How it works
 
