@@ -99,6 +99,20 @@ existing `origin` remote (ignoring `<remote-github-repo>`), and pushes to branch
   nothing was pushed, reset to the last pushed commit, delete
   `contributions.json` and re-run.
 - A first sync can create thousands of commits and take several minutes.
+- **Only the latest ~1,000 commits show on the GitHub graph:** GitHub appears to
+  count at most ~1,000 commits per push (observed, not documented). For a large
+  first sync, point `<remote-github-repo>` at a local bare repo so the tool's
+  single push stays local, then push to GitHub oldest-first in batches of 900:
+
+  ```bash
+  for n in $(seq 900 900 $(git rev-list --count HEAD)) $(git rev-list --count HEAD); do
+    git push origin "$(git rev-list --reverse HEAD | sed -n "${n}p"):refs/heads/main"
+  done
+  ```
+
+  Commits GitHub already received are not recounted, so if a big push was
+  already made, rebuild the history in a fresh directory (new commit IDs) and
+  force-push the first batch.
 
 ## How it works
 
